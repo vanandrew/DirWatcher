@@ -1,0 +1,17 @@
+﻿<Window x:Class="DirWatcher.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:DirWatcher"
+        mc:Ignorable="d"
+        Title="DirWatcher - Because SIEMENS couldn't be bothered to fix their own stuff..." Height="200" Width="510" ResizeMode="NoResize">
+    <Grid x:Name="MainGrid" Margin="10" HorizontalAlignment="Left" VerticalAlignment="Top" Width="480" Height="160">
+        <Label HorizontalAlignment="Left" VerticalAlignment="Top" Margin="3,6,0,0">Directory to Watch:</Label>
+        <TextBox x:Name="txtbxMonitorDirectory" HorizontalAlignment="Left" VerticalAlignment="Top" Width="350" Margin="120,10,0,0"/>
+        <Label HorizontalAlignment="Left" VerticalAlignment="Top" Margin="3,46,0,0">Directory to Copy:</Label>
+        <TextBox x:Name="txtbxCopyDirectory" HorizontalAlignment="Left" VerticalAlignment="Top" Width="350" Margin="120,50,0,0"/>
+        <Button x:Name="btnStartStop" Click="StartStop" HorizontalAlignment="Left" VerticalAlignment="Top" Height="30" Width="100" Margin="6,100,0,0">Start</Button>
+        <StatusBar x:Name="statusBar" HorizontalAlignment="Left" VerticalAlignment="Top" Height="30" Width="350" Margin="120,100,0,0"/>
+    </Grid>
+</Window>
