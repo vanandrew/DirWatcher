@@ -5,13 +5,27 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:DirWatcher"
         mc:Ignorable="d"
-        Title="DirWatcher - Because SIEMENS couldn't be bothered to fix their own stuff..." Height="200" Width="510" ResizeMode="NoResize">
-    <Grid x:Name="MainGrid" Margin="10" HorizontalAlignment="Left" VerticalAlignment="Top" Width="480" Height="160">
-        <Label HorizontalAlignment="Left" VerticalAlignment="Top" Margin="3,6,0,0">Directory to Watch:</Label>
-        <TextBox x:Name="txtbxMonitorDirectory" HorizontalAlignment="Left" VerticalAlignment="Top" Width="350" Margin="120,10,0,0"/>
-        <Label HorizontalAlignment="Left" VerticalAlignment="Top" Margin="3,46,0,0">Directory to Copy:</Label>
-        <TextBox x:Name="txtbxCopyDirectory" HorizontalAlignment="Left" VerticalAlignment="Top" Width="350" Margin="120,50,0,0"/>
-        <Button x:Name="btnStartStop" Click="StartStop" HorizontalAlignment="Left" VerticalAlignment="Top" Height="30" Width="100" Margin="6,100,0,0">Start</Button>
-        <StatusBar x:Name="statusBar" HorizontalAlignment="Left" VerticalAlignment="Top" Height="30" Width="350" Margin="120,100,0,0"/>
+        Title="Because SIEMENS can't be bothered to fix their own things..." Height="450" Width="510" ResizeMode="CanMinimize" Icon="App.ico">
+    <Grid x:Name="MainGrid_Copy" Margin="10,10,0,0" HorizontalAlignment="Left" VerticalAlignment="Top" Height="400" Width="480">
+        <TextBlock HorizontalAlignment="Center" Margin="0,10,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Height="80" Width="460"><Run Text="This program will actively transfer files ending in *.dat from the &quot;Directory to Watch&quot; to the &quot;Directory to Copy&quot;."/><LineBreak/><Run/><LineBreak/><Run Text="If you encounter any errors, please report them to &lt;vanandrew@wustl.edu&gt;"/></TextBlock>
+
+        <Label HorizontalAlignment="Left" Margin="3,96,0,0" VerticalAlignment="Top" Content="Server Path:"/>
+        <TextBox x:Name="txtbxServerPath" HorizontalAlignment="Left" Margin="120,100,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="350"/>
+        <Label HorizontalAlignment="Left" Margin="3,126,0,0" VerticalAlignment="Top" Content="Username:"/>
+        <TextBox x:Name="txtbxUsername" HorizontalAlignment="Left" Margin="120,130,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="350"/>
+        <Label HorizontalAlignment="Left" Margin="3,156,0,0" VerticalAlignment="Top" Content="Password:"/>
+        <PasswordBox x:Name="passbxPassword" HorizontalAlignment="Left" Margin="120,160,0,0" VerticalAlignment="Top" Width="350"/>
+        <Button x:Name="btnMount" Click="Mount" HorizontalAlignment="Left" VerticalAlignment="Top" Height="30" Width="100" Margin="6,206,0,0" Content="Mount"/>
+        <ComboBox x:Name="cbDriveLetter" HorizontalAlignment="Left" VerticalContentAlignment="Center" Margin="120,206,0,0" VerticalAlignment="Top" Width="75" Height="30"/>
+        <StatusBar x:Name="serverStatusBar" HorizontalAlignment="Left" VerticalAlignment="Top" Height="30" Width="258" Margin="209,206,0,0"/>
+
+        <Separator HorizontalAlignment="Center" VerticalAlignment="Top" Width="480" Margin="0,248,0,0"/>
+        
+        <Label HorizontalAlignment="Left" VerticalAlignment="Top" Margin="3,256,0,0" Content="Directory to Watch:"/>
+        <TextBox x:Name="txtbxMonitorDirectory" HorizontalAlignment="Left" VerticalAlignment="Top" Width="350" Margin="120,260,0,0"/>
+        <Label HorizontalAlignment="Left" VerticalAlignment="Top" Margin="3,286,0,0" Content="Directory to Copy:"/>
+        <TextBox x:Name="txtbxCopyDirectory" HorizontalAlignment="Left" VerticalAlignment="Top" Width="350" Margin="120,290,0,0"/>
+        <Button x:Name="btnStartStop" Click="StartStop" HorizontalAlignment="Left" VerticalAlignment="Top" Height="30" Width="100" Margin="6,340,0,0" Content="Start"/>
+        <StatusBar x:Name="statusBar" HorizontalAlignment="Left" VerticalAlignment="Top" Height="30" Width="350" Margin="120,340,0,0"/>
     </Grid>
 </Window>

@@ -1,21 +1,37 @@
-﻿using System;
-using System.IO;
+﻿using IWshRuntimeLibrary;
+using System;
+using System.Linq.Expressions;
 using System.Threading;
 using System.Windows;
 using System.Windows.Controls.Primitives;
 
 namespace DirWatcher
 {
-    /// <summary>
     /// Interaction logic for MainWindow.xaml
-    /// </summary>
     public partial class MainWindow : Window
     {
-        FileSystemWatcher? watcher;
+        // Define members
+        System.IO.FileSystemWatcher? watcher;
+        WshNetwork? network;
+
         public MainWindow()
         {
             InitializeComponent();
-            // Initialize text of components
+
+            // Initialize text of components of Mounter
+            cbDriveLetter.Items.Add("T:");
+            cbDriveLetter.Items.Add("U:");
+            cbDriveLetter.Items.Add("V:");
+            cbDriveLetter.Items.Add("W:");
+            cbDriveLetter.Items.Add("X:");
+            cbDriveLetter.Items.Add("Y:");
+            cbDriveLetter.Items.Add("Z:");
+            cbDriveLetter.SelectedIndex = 5;
+            txtbxServerPath.Text = "\\\\ARCHLEMUR\\Data";
+            txtbxUsername.Text = "sambauser";
+            passbxPassword.Password = "sambapasswd";
+
+            // Initialize text of components for Watcher
             statusBar.Items.Add(new StatusBarItem()
             {
                 Content = "Idle"
@@ -34,12 +50,12 @@ namespace DirWatcher
                 String CopyDirectory = txtbxCopyDirectory.Text;
 
                 // Check if the directories are valid
-                if (!Directory.Exists(MonitorDirectory))
+                if (!System.IO.Directory.Exists(MonitorDirectory))
                 {
                     MessageBox.Show("Monitor Directory does not exist!", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                     return;
                 }
-                if (!Directory.Exists(CopyDirectory))
+                if (!System.IO.Directory.Exists(CopyDirectory))
                 {
                     MessageBox.Show("Copy Directory does not exist!", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                     return;
@@ -60,7 +76,7 @@ namespace DirWatcher
                 });
 
                 // Create a file watcher
-                watcher = new FileSystemWatcher();
+                watcher = new System.IO.FileSystemWatcher();
 
                 // Set the path to the directory to watch
                 watcher.Path = MonitorDirectory;
@@ -78,11 +94,11 @@ namespace DirWatcher
                         try
                         {
                             // Copy the file
-                            File.Copy(e.FullPath, CopyDirectory + e.Name, true);
+                            System.IO.File.Copy(e.FullPath, CopyDirectory + e.Name, true);
                             success = true;
                             break;
                         }
-                        catch (IOException)
+                        catch (System.IO.IOException)
                         {
                             // File is still in use, retry after a delay
                             Thread.Sleep(retryDelayMilliseconds);
@@ -121,6 +137,109 @@ namespace DirWatcher
                 });
                 // Change the button to Start
                 btnStartStop.Content = "Start";
+            }
+        }
+
+        private void Mount(object sender, RoutedEventArgs e)
+        {
+            if (btnMount.Content.ToString() == "Mount")
+            {
+                // Disable the button until we are done
+                btnMount.IsEnabled = false;
+
+                // Mount the network drive
+                network = new WshNetwork();
+                try
+                {
+                    bool success = false;
+                    const int maxRetries = 3;
+                    const int retryDelayMilliseconds = 100;
+
+                    for (int i = 0; i < maxRetries; i++)
+                    {
+                        try
+                        {
+                            network.MapNetworkDrive(cbDriveLetter.Text, txtbxServerPath.Text, false, txtbxUsername.Text, passbxPassword.Password);
+                            success = true;
+                            break;
+                        }
+                        catch
+                        {
+                            //Try again after a delay
+                            Thread.Sleep(retryDelayMilliseconds);
+                        }
+                    }
+
+                    // Try one more time if we still failed.
+                    if (!success)
+                        network.MapNetworkDrive(cbDriveLetter.Text, txtbxServerPath.Text, false, txtbxUsername.Text, passbxPassword.Password);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show(ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    btnMount.IsEnabled = true;
+                    return;
+                }
+
+                // Disable the inputs
+                cbDriveLetter.IsEnabled = false;
+                txtbxServerPath.IsEnabled = false;
+                txtbxUsername.IsEnabled = false;
+                passbxPassword.IsEnabled = false;
+                Dispatcher.Invoke(() =>
+                {
+                    // Update the Status Bar
+                    serverStatusBar.Items.Clear();
+                    serverStatusBar.Items.Add(new StatusBarItem()
+                    {
+                        Content = "Mounted " + txtbxServerPath.Text + " to " + cbDriveLetter.Text
+                    });
+                });
+
+                // Change the button to Unmount
+                btnMount.Content = "Unmount";
+                btnMount.IsEnabled = true;
+            }
+            else
+            {
+                // Disable the button until we are done
+                btnMount.IsEnabled = false;
+
+                // Unmount the network drive
+                if (network != null)
+                {
+                    try
+                    {
+                        network.RemoveNetworkDrive(cbDriveLetter.Text, true, true);
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show(ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                        // return to Mount state
+                        btnMount.Content = "Mount";
+                        btnMount.IsEnabled = true;
+                        return;
+                    }
+                }
+
+                // Enable the inputs
+                cbDriveLetter.IsEnabled = true;
+                txtbxServerPath.IsEnabled = true;
+                txtbxUsername.IsEnabled = true;
+                passbxPassword.IsEnabled = true;
+                Dispatcher.Invoke(() =>
+                {
+                    // Update the Status Bar
+                    serverStatusBar.Items.Clear();
+                    serverStatusBar.Items.Add(new StatusBarItem()
+                    {
+                        Content = "Unmounted " + cbDriveLetter.Text
+                    });
+                });
+
+                // Change the button to Mount
+                btnMount.Content = "Mount";
+                btnMount.IsEnabled = true;
             }
         }
     }
