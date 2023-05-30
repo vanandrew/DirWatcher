@@ -1,18 +1,77 @@
-﻿using IWshRuntimeLibrary;
-using System;
-using System.Linq.Expressions;
+﻿using System;
 using System.Threading;
+using System.Threading.Tasks;
+using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls.Primitives;
+using System.ComponentModel;
 
 namespace DirWatcher
 {
+    public class NetworkResourceMounter
+    {
+        private const int RESOURCETYPE_DISK = 0x00000001;
+        private const int CONNECT_UPDATE_PROFILE = 0x00000001;
+        private const int ERROR_SUCCESS = 0;
+
+        [DllImport("mpr.dll", CharSet = CharSet.Unicode)]
+        private static extern int WNetAddConnection2([In] NETRESOURCE netResource, string password, string username, int flags);
+
+        [DllImport("mpr.dll", CharSet = CharSet.Unicode)]
+        private static extern int WNetCancelConnection2(string name, int flags, bool force);
+
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+        private class NETRESOURCE
+        {
+            public int dwScope;
+            public int dwType;
+            public int dwDisplayType;
+            public int dwUsage;
+            public string? lpLocalName;
+            public string? lpRemoteName;
+            public string? lpComment;
+            public string? lpProvider;
+        }
+
+        public bool MountNetworkResource(string driveLetter, string remotePath, string username, string password)
+        {
+            var netResource = new NETRESOURCE
+            {
+                dwType = RESOURCETYPE_DISK,
+                lpLocalName = driveLetter,
+                lpRemoteName = remotePath
+            };
+
+            int result = WNetAddConnection2(netResource, password, username, CONNECT_UPDATE_PROFILE);
+            if (result != ERROR_SUCCESS)
+            {
+                string errorMessage = new Win32Exception(result).Message;
+                MessageBox.Show(errorMessage, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                return false;
+            }
+
+            return true;
+        }
+
+        public bool UnmountNetworkResource(string driveLetter)
+        {
+            int result = WNetCancelConnection2(driveLetter, CONNECT_UPDATE_PROFILE, false);
+            if (result != ERROR_SUCCESS)
+            {
+                string errorMessage = new Win32Exception(result).Message;
+                MessageBox.Show(errorMessage, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                return false;
+            }
+
+            return true;
+        }
+    }
+
     /// Interaction logic for MainWindow.xaml
     public partial class MainWindow : Window
     {
         // Define members
         System.IO.FileSystemWatcher? watcher;
-        WshNetwork? network;
 
         public MainWindow()
         {
@@ -147,65 +206,91 @@ namespace DirWatcher
                 // Disable the button until we are done
                 btnMount.IsEnabled = false;
 
-                // Mount the network drive
-                network = new WshNetwork();
-                try
-                {
-                    network.MapNetworkDrive(cbDriveLetter.Text, txtbxServerPath.Text, false, txtbxUsername.Text, passbxPassword.Password);
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show(ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                    btnMount.IsEnabled = true;
-                    return;
-                }
-
                 // Disable the inputs
                 cbDriveLetter.IsEnabled = false;
                 txtbxServerPath.IsEnabled = false;
                 txtbxUsername.IsEnabled = false;
                 passbxPassword.IsEnabled = false;
-                Dispatcher.Invoke(() =>
+
+                // Get the strings
+                String DriveLetter = cbDriveLetter.Text;
+                String ServerPath = txtbxServerPath.Text;
+                String Username = txtbxUsername.Text;
+                String Password = passbxPassword.Password;
+
+                // Run the mounting in a separate thread
+                Task.Run(() =>
                 {
-                    // Update the Status Bar
-                    serverStatusBar.Items.Clear();
-                    serverStatusBar.Items.Add(new StatusBarItem()
+                    // Update the Status Bar with mounting attempt
+                    Dispatcher.Invoke(() =>
                     {
-                        Content = "Mounted " + txtbxServerPath.Text + " to " + cbDriveLetter.Text
+                        serverStatusBar.Items.Clear();
+                        serverStatusBar.Items.Add(new StatusBarItem()
+                        {
+                            Content = "Mounting " + txtbxServerPath.Text + " to " + cbDriveLetter.Text
+                        });
+                    });
+
+                    // Mount the network drive
+                    NetworkResourceMounter networkResourceMounter = new NetworkResourceMounter();
+                    if (!networkResourceMounter.MountNetworkResource(DriveLetter, ServerPath, Username, Password))
+                    {
+                        // Mounting failed
+                        Dispatcher.Invoke(() =>
+                        {
+                            // reenable the button
+                            btnMount.IsEnabled = true;
+                            // Update the status
+                            serverStatusBar.Items.Clear();
+                            serverStatusBar.Items.Add(new StatusBarItem()
+                            {
+                                Content = "Mounting " + txtbxServerPath.Text + " failed!"
+                            });
+                            // Reenable the inputs
+                            cbDriveLetter.IsEnabled = true;
+                            txtbxServerPath.IsEnabled = true;
+                            txtbxUsername.IsEnabled = true;
+                            passbxPassword.IsEnabled = true;
+                        });
+                        return;
+                    }
+
+                    // Mounting succeeded
+                    Dispatcher.Invoke(() =>
+                    {
+                        // Update the Status Bar if successful
+                        serverStatusBar.Items.Clear();
+                        serverStatusBar.Items.Add(new StatusBarItem()
+                        {
+                            Content = "Mounted " + txtbxServerPath.Text + " to " + cbDriveLetter.Text
+                        });
+
+                        // Change the button to Unmount
+                        btnMount.Content = "Unmount";
+                        btnMount.IsEnabled = true;
                     });
                 });
-
-                // Change the button to Unmount
-                btnMount.Content = "Unmount";
-                btnMount.IsEnabled = true;
             }
             else
             {
                 // Disable the button until we are done
                 btnMount.IsEnabled = false;
 
-                // Unmount the network drive
-                if (network != null)
-                {
-                    try
-                    {
-                        network.RemoveNetworkDrive(cbDriveLetter.Text, true, true);
-                    }
-                    catch (Exception ex)
-                    {
-                        MessageBox.Show(ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                        // return to Mount state
-                        btnMount.Content = "Mount";
-                        btnMount.IsEnabled = true;
-                        return;
-                    }
-                }
-
                 // Enable the inputs
                 cbDriveLetter.IsEnabled = true;
                 txtbxServerPath.IsEnabled = true;
                 txtbxUsername.IsEnabled = true;
                 passbxPassword.IsEnabled = true;
+
+                // Unmount the network drive
+                NetworkResourceMounter networkResourceMounter = new NetworkResourceMounter();
+                if (!networkResourceMounter.UnmountNetworkResource(cbDriveLetter.Text))
+                {
+                    btnMount.IsEnabled = true;
+                    return;
+                }
+
+                // Update the status bar
                 Dispatcher.Invoke(() =>
                 {
                     // Update the Status Bar
