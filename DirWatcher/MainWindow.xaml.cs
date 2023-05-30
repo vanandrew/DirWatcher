@@ -27,7 +27,7 @@ namespace DirWatcher
             cbDriveLetter.Items.Add("Y:");
             cbDriveLetter.Items.Add("Z:");
             cbDriveLetter.SelectedIndex = 5;
-            txtbxServerPath.Text = "\\\\ARCHLEMUR\\Data";
+            txtbxServerPath.Text = "\\\\10.20.145.192\\Data";
             txtbxUsername.Text = "sambauser";
             passbxPassword.Password = "sambapasswd";
 
@@ -151,28 +151,7 @@ namespace DirWatcher
                 network = new WshNetwork();
                 try
                 {
-                    bool success = false;
-                    const int maxRetries = 3;
-                    const int retryDelayMilliseconds = 100;
-
-                    for (int i = 0; i < maxRetries; i++)
-                    {
-                        try
-                        {
-                            network.MapNetworkDrive(cbDriveLetter.Text, txtbxServerPath.Text, false, txtbxUsername.Text, passbxPassword.Password);
-                            success = true;
-                            break;
-                        }
-                        catch
-                        {
-                            //Try again after a delay
-                            Thread.Sleep(retryDelayMilliseconds);
-                        }
-                    }
-
-                    // Try one more time if we still failed.
-                    if (!success)
-                        network.MapNetworkDrive(cbDriveLetter.Text, txtbxServerPath.Text, false, txtbxUsername.Text, passbxPassword.Password);
+                    network.MapNetworkDrive(cbDriveLetter.Text, txtbxServerPath.Text, false, txtbxUsername.Text, passbxPassword.Password);
                 }
                 catch (Exception ex)
                 {
